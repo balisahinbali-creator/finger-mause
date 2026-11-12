@@ -1,0 +1,33 @@
+
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Projeyi hazirla
+        run: |
+          unzip -q -o FingerMouse.zip -d _proj
+          echo "PROJ=_proj/FingerMouse" >> $GITHUB_ENV
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: MediaPipe modelini indir
+        run: |
+          mkdir -p _proj/FingerMouse/app/src/main/assets
+          curl -L --fail -o _proj/FingerMouse/app/src/main/assets/hand_landmarker.task https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Derle
+        run: cd "$PROJ" && gradle assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: _proj/FingerMouse/app/build/outputs/apk/debug/app-debug.apk
